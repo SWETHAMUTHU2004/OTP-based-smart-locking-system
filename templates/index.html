@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ESP32 OTP Lock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #222;
+      --button-color: #007BFF;
+      --button-hover: #0056b3;
+      --frame-bg: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #f4f4f4;
+      --button-color: #1E90FF;
+      --button-hover: #4682B4;
+      --frame-bg: #1e1e1e;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .phone-frame {
+      width: 360px;
+      max-width: 90%;
+      height: auto;
+      background-color: var(--frame-bg);
+      border: 10px solid #333;
+      border-radius: 40px;
+      box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    h2 {
+      margin-top: 10px;
+      font-size: 20px;
+    }
+
+    button {
+      background-color: var(--button-color);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      margin: 10px 5px;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+      width: 80%;
+      max-width: 250px;
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    input[type="number"],
+    input[type="password"] {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-top: 15px;
+      width: 80%;
+      max-width: 250px;
+    }
+
+    .status {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .locked {
+      color: red;
+    }
+
+    .unlocked {
+      color: limegreen;
+    }
+
+    .toggle-container {
+      margin-top: 20px;
+    }
+
+    @media (max-height: 600px) {
+      .phone-frame {
+        height: 95vh;
+        overflow-y: auto;
+      }
+    }
+  </style>
+  <script>
+    function generateOTP() {
+      fetch('/generate_otp', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => updateStatusDisplay(data.status));
+    }
+
+    function lockSystem() {
+      fetch('/lock_system', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => updateStatusDisplay(data.status));
+    }
+
+    function validateOTP() {
+      const enteredOTP = document.getElementById('otp_input').value;
+      fetch('/validate_otp', {
+        method: 'POST',
+        body: new URLSearchParams({ 'otp': enteredOTP }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          updateStatusDisplay(data.status);
+          if (data.status === "LOCKDOWN") {
+            document.getElementById('otp_section').style.display = "none";
+            document.getElementById('password_section').style.display = "block";
+          }
+        });
+    }
+
+    function verifyPassword() {
+      const password = document.getElementById('password_input').value;
+      fetch('/verify_password', {
+        method: 'POST',
+        body: new URLSearchParams({ 'password': password }),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('password_message').innerText = data.message;
+          if (data.success) {
+            document.getElementById('password_input').value = '';
+            document.getElementById('otp_section').style.display = 'block';
+            document.getElementById('password_section').style.display = 'none';
+          }
+        });
+    }
+
+    function updateStatusDisplay(status) {
+      const statusElem = document.getElementById('status_display');
+      statusElem.innerText = "Status: " + status;
+      statusElem.className = "status " + (status === "UNLOCKED" ? "unlocked" : "locked");
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+    }
+
+    function applySavedTheme() {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+
+    setInterval(() => {
+      fetch('/get_status')
+        .then(response => response.json())
+        .then(data => {
+          updateStatusDisplay(data.status);
+          if (data.lockdown) {
+            document.getElementById('otp_section').style.display = 'none';
+            document.getElementById('password_section').style.display = 'block';
+          } else {
+            document.getElementById('otp_section').style.display = 'block';
+            document.getElementById('password_section').style.display = 'none';
+          }
+        });
+    }, 5000);
+
+    window.onload = applySavedTheme;
+  </script>
+</head>
+<body>
+  <div class="phone-frame">
+    <h2>📱 ESP32 OTP Lock</h2>
+
+    <div id="otp_section">
+      <button onclick="generateOTP()">Request OTP</button>
+      <button onclick="lockSystem()">Lock Now</button>
+      <br />
+      <input type="number" id="otp_input" placeholder="Enter OTP" />
+      <br />
+      <button onclick="validateOTP()">Submit OTP</button>
+    </div>
+
+    <div id="password_section" style="display: none;">
+      <p>System Locked due to multiple wrong attempts. Enter password to continue.</p>
+      <input type="password" id="password_input" placeholder="Enter password" />
+      <button onclick="verifyPassword()">Submit Password</button>
+      <p id="password_message"></p>
+    </div>
+
+    <p id="status_display" class="status locked">Status: LOCKED</p>
+
+    <div class="toggle-container">
+      <button onclick="toggleTheme()"> Toggle Light/Dark Mode</button>
+    </div>
+  </div>
+</body>
+</html>
