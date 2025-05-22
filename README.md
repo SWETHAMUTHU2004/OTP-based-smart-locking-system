@@ -18,9 +18,6 @@ This project is a **responsive, mobile-friendly web interface** for controlling 
 
 ## 📷 Interface Preview
 
-![ESP32 OTP Lock UI Screenshot](screenshot.png)
-
-
 ![Screenshot 2025-05-22 122906](https://github.com/user-attachments/assets/9db13504-28ec-4d05-b982-09ab0b2c7b47)
 
 ## 🧰 Technologies Used
