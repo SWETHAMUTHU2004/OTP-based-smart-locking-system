@@ -54,13 +54,13 @@ esp32-otp-lock/
 ├── index.html
 ├── style.css (optional, embedded in HTML)
 ├── script.js (optional, embedded in HTML)
-Lockdown Logic
+### 4. Lockdown Logic
 Lock the system after 3 wrong attempts and require the admin password to unlock.
 
-Deployment
+### 5. Deployment
 Upload your HTML to the ESP32 SPIFFS or embed it directly into a C/C++ or Python string if using Arduino/MicroPython. Make sure the backend endpoints match the expected paths.
 
- Author
-Made with ❤️ by [Swetha M]
-If you find this useful, feel free to ⭐ the repo!
+AUTHOR
+      Made with ❤️ by [Swetha M]
+      If you find this useful, feel free to ⭐ the repo!
 
